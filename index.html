@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Flight Data</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    
+</head>
+
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-10">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">Flight No</th>
+                            <th scope="col">DepartureAirport</th>
+                            <th scope="col">ArrivalAirport</th>
+                            <th scope="col">DepartureTime</th>
+                            <th scope="col">ArrivalTime</th>
+                            <th scope="col">FlightOperator</th>
+                            <th scope="col">Price</th>
+                        </tr>
+                    </thead>
+                    <tbody id="flightTableBody"></tbody>
+                </table>
+            </div>
+            <div class="col-2">
+                <div class="col">
+                    <button id="lowerPriceButton" type="button" class="btn btn-outline-dark">Lower Price</button>
+                </div>
+                <div class="col mt-4">
+                    <button id="higherPriceButton" type="button" class="btn btn-outline-dark">Higher Price</button>
+                </div>
+                
+                <div class="col mt-4">
+                    <select id="flightOperatorSelect" class="form-select">
+                        <option value="">Select FlightOperator</option>
+                        <option value="Abelag Aviation">Abelag Aviation</option>
+                        <option value="AnadoluJet">AnadoluJet</option>
+                        <option value="Turkish Airlines">Turkish Airlines</option>
+                        <option value="LOT Polish Airlines">LOT Polish Airlines</option>
+                        <option value="JAT Airways">JAT Airways</option>
+                        <option value="British Airways">British Airways</option>
+                        <option value="Azerbaijan Airlines">Azerbaijan Airlines</option>
+                        <option value="Lufthansa">Lufthansa</option>
+                        <option value="EgyptAir">EgyptAir</option>
+                        <option value="El Al">El Al	</option>
+                        <option value="Qatar Airways">Qatar Airways</option>
+                        <option value="Emirates Airline">Emirates Airline</option>
+                        <option value="Pegasus Airlines">Pegasus Airlines</option>
+                    </select>
+                </div>
+                <div class="col mt-4">
+                    <button id="filterButton" type="button" class="btn btn-outline-success">Filter</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/javascript">
+    var flightArray;
+    var flightDetails;
+
+    // Fetch flight data from JSON file
+    fetch('http://localhost:8080/fligthJSONList.json')
+        .then(response => response.json())
+        .then(data => {
+            var flight = data;
+            // Use yourVariable for further processing
+            flightArray = flight.response.itineraryList[0].flightOptionList;
+            flightDetails = flightArray.map((flight) => ({
+                flightNo: flight.flightList[0].flightNo,
+                departureAirportName: flight.flightList[0].departureAirport.name,
+                departureAirportCode: flight.flightList[0].departureAirport.code,
+                arrivalAirportName: flight.flightList[0].arrivalAirport.name,
+                arrivalAirportCode: flight.flightList[0].arrivalAirport.code,
+                arrivalTime: flight.flightList[0].arrivalTime,
+                departureTime: flight.flightList[0].departureTime,
+                flightPrice: flight.fareOptionList[0].totalPriceInRequestedCurrency,
+                flightOperator: flight.flightList[0].flightOperator.name
+            }));
+            populateTable(flightDetails);
+        });
+
+    function populateTable(data) {
+        var tableBody = document.getElementById("flightTableBody");
+        tableBody.innerHTML = ""; // Clear existing table rows
+
+        data.forEach(function(flight, index) {
+            var row = document.createElement("tr");
+
+            var indexCell = document.createElement("th");
+            indexCell.setAttribute("scope", "row");
+            indexCell.textContent = index + 1;
+            row.appendChild(indexCell);
+
+            var flightNoCell = document.createElement("td");
+            flightNoCell.textContent = flight.flightNo;
+            row.appendChild(flightNoCell);
+
+            var departureAirportCell = document.createElement("td");
+            departureAirportCell.textContent = flight.departureAirportName + " (" + flight.departureAirportCode + ")";
+            row.appendChild(departureAirportCell);
+
+            var arrivalAirportCell = document.createElement("td");
+            arrivalAirportCell.textContent = flight.arrivalAirportName + " (" + flight.arrivalAirportCode + ")";
+            row.appendChild(arrivalAirportCell);
+
+            var departureTimeCell = document.createElement("td");
+            var departureTime = flight.departureTime.substring(11, 16); // Extract hours and minutes
+            departureTimeCell.textContent = departureTime;
+            row.appendChild(departureTimeCell);
+
+            var arrivalTimeCell = document.createElement("td");
+            var arrivalTime = flight.arrivalTime.substring(11, 16); // Extract hours and minutes
+            arrivalTimeCell.textContent = arrivalTime;
+            row.appendChild(arrivalTimeCell);
+
+            var operatorCell = document.createElement("td");
+            operatorCell.textContent = flight.flightOperator;
+            row.appendChild(operatorCell);
+
+            var priceCell = document.createElement("td");
+            priceCell.textContent = flight.flightPrice + "$";
+            row.appendChild(priceCell);
+
+            tableBody.appendChild(row);
+        });
+    }
+
+    document.getElementById("lowerPriceButton").addEventListener("click", function() {
+        flightDetails.sort((a, b) => a.flightPrice - b.flightPrice);
+        populateTable(flightDetails);
+    });
+
+    document.getElementById("higherPriceButton").addEventListener("click", function() {
+        flightDetails.sort((a, b) => b.flightPrice - a.flightPrice);
+        populateTable(flightDetails);
+    });
+
+    function applyFilter() {
+        var selectedOperator = document.getElementById("flightOperatorSelect").value;
+        var filteredFlights = flightDetails;
+
+        if (selectedOperator) {
+            filteredFlights = filteredFlights.filter(flight => flight.flightOperator === selectedOperator);
+        }
+
+        populateTable(filteredFlights);
+    }
+    document.getElementById("filterButton").addEventListener("click", applyFilter);
+</script>
+</html>
